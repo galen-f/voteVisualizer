@@ -18,6 +18,8 @@ Install Dependencies
 `pip install -r requirements.txt`
 
 ## Demo
+<img width="1440" height="792" alt="seateVoteMap" src="https://github.com/user-attachments/assets/4b62107b-e00a-4b1a-aa2b-e9056ffa56c4" />
+Vote map of the vote 119-1-416 of the US Senate.
 
 ## Contributing
 Always feel free to pull, if you spot a bug or have an idea, open an issue or reach out to me on my socials.
