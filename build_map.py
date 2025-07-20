@@ -7,270 +7,242 @@ import requests
 import xml.etree.ElementTree as ET
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from matplotlib.colors import ListedColormap
-import numpy as np
+import pandas as pd
+import geopandas as gpd
 from collections import defaultdict
-
-# State positions for the map (approximate coordinates)
-STATE_POSITIONS = {
-    'AL': (86.79, 32.77), 'AK': (152.40, 64.20), 'AZ': (111.09, 34.27),
-    'AR': (92.37, 34.91), 'CA': (119.41, 36.77), 'CO': (105.31, 39.05),
-    'CT': (72.74, 41.76), 'DE': (75.50, 39.00), 'FL': (81.69, 27.77),
-    'GA': (83.44, 33.76), 'HI': (157.50, 21.31), 'ID': (114.74, 44.07),
-    'IL': (88.99, 40.63), 'IN': (86.15, 39.79), 'IA': (93.62, 42.03),
-    'KS': (98.48, 38.50), 'KY': (84.67, 37.84), 'LA': (91.98, 30.99),
-    'ME': (69.32, 44.32), 'MD': (76.50, 39.05), 'MA': (71.38, 42.41),
-    'MI': (84.72, 43.33), 'MN': (95.01, 45.39), 'MS': (89.40, 32.35),
-    'MO': (92.60, 38.57), 'MT': (110.36, 47.05), 'NE': (99.68, 41.49),
-    'NV': (117.05, 39.16), 'NH': (71.55, 43.95), 'NJ': (74.76, 40.22),
-    'NM': (106.25, 34.31), 'NY': (74.22, 42.16), 'NC': (78.64, 35.77),
-    'ND': (99.78, 47.41), 'OH': (82.76, 40.27), 'OK': (97.53, 35.01),
-    'OR': (123.03, 44.93), 'PA': (77.19, 40.27), 'RI': (71.42, 41.70),
-    'SC': (80.95, 33.84), 'SD': (99.90, 44.30), 'TN': (86.58, 35.86),
-    'TX': (97.56, 31.05), 'UT': (111.89, 39.32), 'VT': (72.71, 44.56),
-    'VA': (78.17, 37.77), 'WA': (121.49, 47.75), 'WV': (80.95, 38.84),
-    'WI': (89.62, 44.27), 'WY': (107.30, 42.75)
-}
 
 # Color mapping
 COLORS = {
-    'Yea': 'green',
-    'Nay': 'red',
-    'Split': 'yellow',
-    'Not Voting': 'lightgray',
-    'Absent': 'lightgray'
+    4: '#1CE67D',  # Both Yea
+    0: '#F5311B',  # Both Nay
+    1: '#FF9421',  # 1 Nay, 1 no vote
+    2: '#FFDE26',  # 1 yay, 1 nay
+    3: '#90FF21',  # 1 yay, 1 no vote
+    -1: 'lightgray', # Both no votes
 }
 
-class SenateVoteVisualizer:
-    def __init__(self):
-        self.vote_data = {}
-        self.vote_info = {}
-        
-    def fetch_vote_data(self, congress, session, roll_call):
+COLOR_LABELS = {
+    -1: "Both absent",
+    0: "Both Nay",
+    1: "Split (Nay/Absent)",
+    2: "Split (Yea/Nay)",
+    3: "Split (Yea/Absent)",
+    4: "Both Yea"
+}
+
+shape_file = "/Users/Asus/Repositories/VoteMapMaker/StateShapeFiles/cb_2018_us_state_20m.shp"  # Path to the shapefile of US states
+
+def __init__(self):
+    self.vote_data = {}
+    self.vote_info = {}
+
+# ----------------------------------------------
+# 1.  Build a mapping dictionary (or use 'us' lib)
+# ----------------------------------------------
+STATE_ABBREVIATION_TO_NAME = {
+    'AL': 'Alabama',       'AK': 'Alaska',
+    'AZ': 'Arizona',       'AR': 'Arkansas',
+    'CA': 'California',    'CO': 'Colorado',
+    'CT': 'Connecticut',   'DE': 'Delaware',
+    'FL': 'Florida',       'GA': 'Georgia',
+    'HI': 'Hawaii',        'ID': 'Idaho',
+    'IL': 'Illinois',      'IN': 'Indiana',
+    'IA': 'Iowa',          'KS': 'Kansas',
+    'KY': 'Kentucky',      'LA': 'Louisiana',
+    'ME': 'Maine',         'MD': 'Maryland',
+    'MA': 'Massachusetts', 'MI': 'Michigan',
+    'MN': 'Minnesota',     'MS': 'Mississippi',
+    'MO': 'Missouri',      'MT': 'Montana',
+    'NE': 'Nebraska',      'NV': 'Nevada',
+    'NH': 'New Hampshire', 'NJ': 'New Jersey',
+    'NM': 'New Mexico',    'NY': 'New York',
+    'NC': 'North Carolina','ND': 'North Dakota',
+    'OH': 'Ohio',          'OK': 'Oklahoma',
+    'OR': 'Oregon',        'PA': 'Pennsylvania',
+    'RI': 'Rhode Island',  'SC': 'South Carolina',
+    'SD': 'South Dakota',  'TN': 'Tennessee',
+    'TX': 'Texas',         'UT': 'Utah',
+    'VT': 'Vermont',       'VA': 'Virginia',
+    'WA': 'Washington',    'WV': 'West Virginia',
+    'WI': 'Wisconsin',     'WY': 'Wyoming',
+}
+    
+
+def fetch_vote_data(congress: int, session: int, roll_call: int) -> pd.DataFrame:
         """
-        Fetch vote data from Senate.gov XML API
-        
-        Args:
-            congress (int): Congress number (e.g., 119)
-            session (int): Session number (1 or 2)
-            roll_call (int): Roll call number
+        Fetch a roll‑call vote and return it as a DataFrame.
+
+        Returns
+        -------
+        pd.DataFrame
+            Columns:  state | vote1 | vote2
+            Each row holds the two recorded votes for that state
+            (None if a senator did not vote or seat is vacant).
         """
-        # Format the URL according to the API specification
-        url = f"https://www.senate.gov/legislative/LIS/roll_call_votes/vote{congress}{session}/vote_{congress:03d}_{session}_{roll_call:05d}.xml"
-        
+        url = (f"https://www.senate.gov/legislative/LIS/roll_call_votes/"
+               f"vote{congress}{session}/vote_{congress:03d}_{session}_{roll_call:05d}.xml")
+
         try:
-            print(f"Fetching data from: {url}")
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
+            r = requests.get(url, timeout=10)
+            r.raise_for_status()
+            root = ET.fromstring(r.content)
+
+            # --- collect votes ------------------------------------------------
+            by_state = defaultdict(list)
+            for member in root.findall("./members/member"):
+                state = member.findtext("state")
+                vote  = member.findtext("vote_cast", default="Not Voting")
+                by_state[state].append(vote)
+
+            # --- normalize to exactly two votes per state --------------------
+            rows = []
+            for state, votes in by_state.items():
+                # pad or truncate to length 2
+                pair = (votes + [None, None])[:2]
+                rows.append({"state": state, "vote1": pair[0], "vote2": pair[1]})
+
+            # build tidy DataFrame
+            df = (pd.DataFrame(rows)
+                    .sort_values("state")
+                    .reset_index(drop=True))
             
-            # Parse XML
-            root = ET.fromstring(response.content)
+            # --- Classify the state vote  ---
+            '''
+            -1 = both votes are absent / not voting
+            0 = both votes are nay
+            1 = 1 not voting, 1 nay
+            2 = 1 yay, 1 nay
+            3 = 1 not voting, 1 yay
+            4 = both votes are yay
+            '''
+            def no_vote(v): # Treat both absent and abstaining as equivalent
+                return v in [None, 'Not Voting', 'Absent']
             
-            # Extract vote information
-            self.vote_info = {
-                'congress': root.find('congress').text if root.find('congress') is not None else str(congress),
-                'session': root.find('session').text if root.find('session') is not None else str(session),
-                'vote_number': root.find('vote_number').text if root.find('vote_number') is not None else str(roll_call),
-                'vote_date': root.find('vote_date').text if root.find('vote_date') is not None else 'Unknown',
-                'question': root.find('question').text if root.find('question') is not None else 'Unknown',
-                'vote_title': root.find('vote_title').text if root.find('vote_title') is not None else 'Unknown'
-            }
-            
-            # Extract member votes
-            self.vote_data = defaultdict(list)
-            
-            members = root.find('members')
-            if members is not None:
-                for member in members.findall('member'):
-                    state = member.find('state').text if member.find('state') is not None else None
-                    vote_cast = member.find('vote_cast').text if member.find('vote_cast') is not None else 'Not Voting'
-                    
-                    if state:
-                        self.vote_data[state].append(vote_cast)
-            
-            print(f"Successfully fetched vote data for {len(self.vote_data)} states")
-            return True
-            
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching data: {e}")
-            return False
-        except ET.ParseError as e:
-            print(f"Error parsing XML: {e}")
-            return False
-        except Exception as e:
-            print(f"Unexpected error: {e}")
-            return False
+            def classify_vote(vote1, vote2):
+
+                if no_vote(vote1) and no_vote(vote2):                                               return -1
+                elif vote1 == 'Nay' and vote2 == 'Nay':                                             return 0
+                elif (no_vote(vote1) and vote2 == 'Nay') or (vote1 == 'Nay' and no_vote(vote2)):    return 1
+                elif (vote1 == 'Yea' and vote2 == 'Nay') or (vote1 == 'Nay' and vote2 == 'Yea'):    return 2
+                elif (no_vote(vote1) and vote2 == 'Yea') or (vote1 == 'Yea' and no_vote(vote2)):    return 3
+                elif vote1 == 'Yea' and vote2 == 'Yea':                                             return 4
+                else:                                                                               return None
+
+            df['orientation'] = df.apply(lambda r: classify_vote(r['vote1'], r['vote2']), axis=1)
+            return df
+
+        except (requests.RequestException, ET.ParseError) as e:
+            raise RuntimeError(f"Unable to fetch or parse vote data: {e}") from e
+
+
+def fetch_geographic_data() -> gpd.GeoDataFrame:
+    """
+    Fetch the geographic data for US states from a shapefile.
     
-    def determine_state_vote(self, votes):
-        """
-        Determine the overall state vote based on individual senator votes
-        
-        Args:
-            votes (list): List of votes from the state's senators
-            
-        Returns:
-            str: Overall state vote ('Yea', 'Nay', 'Split', etc.)
-        """
-        if not votes:
-            return 'Not Voting'
-        
-        # Count different vote types
-        vote_counts = defaultdict(int)
-        for vote in votes:
-            vote_counts[vote] += 1
-        
-        # Determine state result
-        yea_count = vote_counts.get('Yea', 0)
-        nay_count = vote_counts.get('Nay', 0)
-        
-        if yea_count > 0 and nay_count > 0:
-            return 'Split'
-        elif yea_count > nay_count:
-            return 'Yea'
-        elif nay_count > yea_count:
-            return 'Nay'
-        else:
-            # Handle cases where neither Yea nor Nay (e.g., all abstentions)
-            most_common_vote = max(vote_counts, key=vote_counts.get)
-            return most_common_vote if most_common_vote in ['Yea', 'Nay'] else 'Not Voting'
+    Returns
+    -------
+    gpd.GeoDataFrame
+        A GeoDataFrame containing the geometry of US states.
+    """
+    try:
+        gdf = gpd.read_file(shape_file)
+        # print(gdf)
+
+        # Drop non-voting juristictions (DC, PR, etc.)
+        gdf = gdf[gdf['STUSPS'].isin(STATE_ABBREVIATION_TO_NAME.keys())]
+
+        # Drop hawaii and alaska - they make the map look shit.
+        gdf = gdf[~gdf['NAME'].isin(['Alaska', 'Hawaii'])]
+
+        return gdf
+    except Exception as e:
+        raise RuntimeError(f"Unable to fetch geographic data: {e}") from e
+
+
+def merge_dataframes(df: pd.DataFrame, gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Merge the vote DataFrame with the geographic GeoDataFrame.
     
-    def create_map(self):
-        """Create and display the vote visualization map"""
-        if not self.vote_data:
-            print("No vote data available. Please fetch vote data first.")
-            return
-        
-        # Create figure
-        fig, ax = plt.subplots(1, 1, figsize=(16, 10))
-        
-        # Set map bounds (approximate US boundaries)
-        ax.set_xlim(-180, -60)
-        ax.set_ylim(15, 75)
-        
-        # Plot states
-        for state, position in STATE_POSITIONS.items():
-            lon, lat = position
-            
-            # Determine state vote
-            state_votes = self.vote_data.get(state, [])
-            state_result = self.determine_state_vote(state_votes)
-            
-            # Get color
-            color = COLORS.get(state_result, 'lightgray')
-            
-            # Create state marker
-            circle = plt.Circle((-lon, lat), 2, color=color, alpha=0.8, zorder=2)
-            ax.add_patch(circle)
-            
-            # Add state label
-            ax.text(-lon, lat, state, ha='center', va='center', 
-                   fontsize=8, fontweight='bold', zorder=3)
-        
-        # Add title and legend
-        title = f"Senate Vote {self.vote_info.get('vote_number', 'Unknown')}"
-        if self.vote_info.get('vote_title', '') != 'Unknown':
-            title += f": {self.vote_info.get('vote_title', '')}"
-        title += f"\nCongress {self.vote_info.get('congress', '')}, Session {self.vote_info.get('session', '')}"
-        title += f" | Date: {self.vote_info.get('vote_date', 'Unknown')}"
-        
-        ax.set_title(title, fontsize=14, fontweight='bold', pad=20)
-        
-        # Create legend
-        legend_elements = []
-        for vote_type, color in COLORS.items():
-            if vote_type in ['Yea', 'Nay', 'Split']:
-                legend_elements.append(plt.Circle((0,0), 1, color=color, label=vote_type))
-        
-        ax.legend(handles=legend_elements, loc='lower left', bbox_to_anchor=(0, 0))
-        
-        # Remove axes
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['bottom'].set_visible(False)
-        ax.spines['left'].set_visible(False)
-        
-        plt.tight_layout()
-        plt.show()
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing vote data.
+    gdf : gpd.GeoDataFrame
+        GeoDataFrame containing geographic data.
     
-    def print_vote_summary(self):
-        """Print a summary of the vote results"""
-        if not self.vote_data:
-            print("No vote data available.")
-            return
-        
-        print("\n" + "="*60)
-        print("VOTE SUMMARY")
-        print("="*60)
-        print(f"Congress: {self.vote_info.get('congress', 'Unknown')}")
-        print(f"Session: {self.vote_info.get('session', 'Unknown')}")
-        print(f"Vote Number: {self.vote_info.get('vote_number', 'Unknown')}")
-        print(f"Date: {self.vote_info.get('vote_date', 'Unknown')}")
-        print(f"Question: {self.vote_info.get('question', 'Unknown')}")
-        print(f"Title: {self.vote_info.get('vote_title', 'Unknown')}")
-        print("-"*60)
-        
-        # Count state results
-        state_results = defaultdict(int)
-        for state, votes in self.vote_data.items():
-            result = self.determine_state_vote(votes)
-            state_results[result] += 1
-        
-        print("State Results:")
-        for result, count in sorted(state_results.items()):
-            print(f"  {result}: {count} states")
-        
-        print("\nDetailed State Breakdown:")
-        for state in sorted(self.vote_data.keys()):
-            votes = self.vote_data[state]
-            result = self.determine_state_vote(votes)
-            vote_detail = ", ".join(votes) if len(votes) <= 2 else f"{len(votes)} votes"
-            print(f"  {state}: {result} ({vote_detail})")
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Merged GeoDataFrame with vote data.
+    """
+    gdf = pd.merge(
+        left=gdf,
+        right=df,
+        left_on='STUSPS',
+        right_on='state',
+        how='left')
+    return gdf
+
+
+def plot_votes(gdf: gpd.GeoDataFrame):
+    """
+    Plot the votes on a map of the US.
+    
+    Parameters
+    ----------
+    gdf : gpd.GeoDataFrame
+        GeoDataFrame containing geographic and vote data.
+    """
+    fig, ax = plt.subplots(1, 1, figsize=(15, 10))
+    
+    # Create a color map based on the votes
+    colors = gdf['orientation'].map(COLORS).fillna('lightgray')
+    
+    # Plot the states with their respective colors
+    gdf.boundary.plot(ax=ax, linewidth=0.2, edgecolor='black')
+    gdf.plot(ax=ax, color=colors, edgecolor='black')
+
+    # Add the legend for the vote orientations from COLOR_LABELS
+    legend_patches = [
+        patches.Patch(facecolor=COLORS[orientation], label=label)
+        for orientation, label in COLOR_LABELS.items()
+    ]
+    ax.legend(handles=legend_patches, loc='lower left', title='Vote Orientation')
+
+    plt.title("US Senate Votes")
+    plt.axis('off')
+    plt.show()
+
+    # Legend
+    plt.legend_elements = [
+        (patches.Patch(color=color, label=label) for label, color in COLORS.items())
+    ]
+
 
 def main():
-    """Main function to run the Senate Vote Visualizer"""
-    visualizer = SenateVoteVisualizer()
-    
-    print("Senate Vote Visualizer")
-    print("="*40)
-    
-    while True:
-        try:
-            print("\nEnter vote details:")
-            congress = int(input("Congress number (e.g., 119): "))
-            session = int(input("Session (1 or 2): "))
-            roll_call = int(input("Roll call number (e.g., 160): "))
-            
-            print("\nFetching vote data...")
-            if visualizer.fetch_vote_data(congress, session, roll_call):
-                visualizer.print_vote_summary()
-                
-                show_map = input("\nShow map visualization? (y/n): ").lower().strip()
-                if show_map.startswith('y'):
-                    visualizer.create_map()
-                
-                another = input("\nAnalyze another vote? (y/n): ").lower().strip()
-                if not another.startswith('y'):
-                    break
-            else:
-                print("Failed to fetch vote data. Please check your inputs and try again.")
-                retry = input("Try again? (y/n): ").lower().strip()
-                if not retry.startswith('y'):
-                    break
-        
-        except ValueError:
-            print("Please enter valid numbers.")
-        except KeyboardInterrupt:
-            print("\nExiting...")
-            break
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            retry = input("Try again? (y/n): ").lower().strip()
-            if not retry.startswith('y'):
-                break
-    
-    print("Thank you for using Senate Vote Visualizer!")
+    print('=' * 40)
+    print("US Senate Vote Visualizer")
+    print('=' * 40)
+
+    congress = input("Enter a congress (e.g., 119): ")
+    session = input("Enter a session (1 or 2): ")
+    roll_call = input("Enter a roll call number (e.g., 416): ")
+
+    print(f"Fetching vote data for Congress {congress}, Session {session}, Roll Call {roll_call}...")
+    df = fetch_vote_data(int(congress), int(session), int(roll_call))
+
+    print("Fetching geographic data...")
+    gdf = fetch_geographic_data()
+
+    print("Merging dataframes...")
+    merged_df = merge_dataframes(df, gdf)
+
+    print("Preparing Visualization...")
+    plot_votes(merged_df)
+
 
 if __name__ == "__main__":
     main()
+else:
+    print("This script is intended to be run as a standalone program.")
+    print("Please run it directly to visualize US Senate votes.")
