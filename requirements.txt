@@ -1,0 +1,19 @@
+# Core
+requests>=2.31.0
+python-dotenv>=1.0.1
+
+# Data
+pandas>=2.2.2
+geopandas>=0.14.3
+
+# Plotting
+matplotlib>=3.9.0
+
+# GIS deps
+shapely>=2.0.4
+fiona>=1.9.6
+pyproj>=3.7.1
+rtree>=1.2.0
+
+# Utilities
+us>=3.1.1
