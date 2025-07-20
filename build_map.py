@@ -3,6 +3,8 @@ Senate Vote Visualizer
 Fetches US Senate vote data and displays results on a US map
 """
 
+import os
+from dotenv import load_dotenv
 import requests
 import xml.etree.ElementTree as ET
 import matplotlib.pyplot as plt
@@ -30,42 +32,8 @@ COLOR_LABELS = {
     4: "Both Yea"
 }
 
-shape_file = "/Users/Asus/Repositories/VoteMapMaker/StateShapeFiles/cb_2018_us_state_20m.shp"  # Path to the shapefile of US states
-
-def __init__(self):
-    self.vote_data = {}
-    self.vote_info = {}
-
-# ----------------------------------------------
-# 1.  Build a mapping dictionary (or use 'us' lib)
-# ----------------------------------------------
-STATE_ABBREVIATION_TO_NAME = {
-    'AL': 'Alabama',       'AK': 'Alaska',
-    'AZ': 'Arizona',       'AR': 'Arkansas',
-    'CA': 'California',    'CO': 'Colorado',
-    'CT': 'Connecticut',   'DE': 'Delaware',
-    'FL': 'Florida',       'GA': 'Georgia',
-    'HI': 'Hawaii',        'ID': 'Idaho',
-    'IL': 'Illinois',      'IN': 'Indiana',
-    'IA': 'Iowa',          'KS': 'Kansas',
-    'KY': 'Kentucky',      'LA': 'Louisiana',
-    'ME': 'Maine',         'MD': 'Maryland',
-    'MA': 'Massachusetts', 'MI': 'Michigan',
-    'MN': 'Minnesota',     'MS': 'Mississippi',
-    'MO': 'Missouri',      'MT': 'Montana',
-    'NE': 'Nebraska',      'NV': 'Nevada',
-    'NH': 'New Hampshire', 'NJ': 'New Jersey',
-    'NM': 'New Mexico',    'NY': 'New York',
-    'NC': 'North Carolina','ND': 'North Dakota',
-    'OH': 'Ohio',          'OK': 'Oklahoma',
-    'OR': 'Oregon',        'PA': 'Pennsylvania',
-    'RI': 'Rhode Island',  'SC': 'South Carolina',
-    'SD': 'South Dakota',  'TN': 'Tennessee',
-    'TX': 'Texas',         'UT': 'Utah',
-    'VT': 'Vermont',       'VA': 'Virginia',
-    'WA': 'Washington',    'WV': 'West Virginia',
-    'WI': 'Wisconsin',     'WY': 'Wyoming',
-}
+load_dotenv()
+shape_file = os.getenv("SHAPE_FILE_PATH")  # Path to the shapefile of US states - Usually something like "cb_2018_us_state_20m.shp"
     
 
 def fetch_vote_data(congress: int, session: int, roll_call: int) -> pd.DataFrame:
@@ -129,10 +97,11 @@ def fetch_vote_data(congress: int, session: int, roll_call: int) -> pd.DataFrame
                 else:                                                                               return None
 
             df['orientation'] = df.apply(lambda r: classify_vote(r['vote1'], r['vote2']), axis=1)
+
             return df
 
-        except (requests.RequestException, ET.ParseError) as e:
-            raise RuntimeError(f"Unable to fetch or parse vote data: {e}") from e
+        except:
+            raise RuntimeError(f"Unable to fetch vote data from {url}. Please check the congress, session, and roll call number. Vote likely does not exist") from None
 
 
 def fetch_geographic_data() -> gpd.GeoDataFrame:
@@ -148,11 +117,8 @@ def fetch_geographic_data() -> gpd.GeoDataFrame:
         gdf = gpd.read_file(shape_file)
         # print(gdf)
 
-        # Drop non-voting juristictions (DC, PR, etc.)
-        gdf = gdf[gdf['STUSPS'].isin(STATE_ABBREVIATION_TO_NAME.keys())]
-
-        # Drop hawaii and alaska - they make the map look shit.
-        gdf = gdf[~gdf['NAME'].isin(['Alaska', 'Hawaii'])]
+        # Drop hawaii and alaska - they make the map look shit and PR because it has no vote.
+        gdf = gdf[~gdf['NAME'].isin(['Alaska', 'Hawaii', 'Puerto Rico'])]
 
         return gdf
     except Exception as e:
@@ -212,11 +178,6 @@ def plot_votes(gdf: gpd.GeoDataFrame):
     plt.title("US Senate Votes")
     plt.axis('off')
     plt.show()
-
-    # Legend
-    plt.legend_elements = [
-        (patches.Patch(color=color, label=label) for label, color in COLORS.items())
-    ]
 
 
 def main():
