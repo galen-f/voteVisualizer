@@ -1,3 +1,5 @@
 /.env
 /maps
 /StateShapeFiles
+/DistrictShapeFiles
+*.png
