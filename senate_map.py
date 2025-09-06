@@ -33,7 +33,7 @@ COLOR_LABELS = {
 }
 
 load_dotenv()
-shape_file = os.getenv("SHAPE_FILE_PATH")  # Path to the shapefile of US states - Usually something like "cb_2018_us_state_20m.shp"
+shape_file = os.getenv("STATE_MAP_FILE_PATH")  # Path to the shapefile of US states - Usually something like "cb_2018_us_state_20m.shp"
     
 
 def fetch_vote_data(congress: int, session: int, roll_call: int) -> pd.DataFrame:
@@ -113,17 +113,15 @@ def fetch_geographic_data() -> gpd.GeoDataFrame:
     gpd.GeoDataFrame
         A GeoDataFrame containing the geometry of US states.
     """
-    try:
-        gdf = gpd.read_file(shape_file)
-        # print(gdf)
+    if not shape_file:
+        raise RuntimeError("STATE_MAP_FILE_PATH is not set. Check your .env.")
+    gdf = gpd.read_file(shape_file)
+    # print(gdf)
 
-        # Drop hawaii and alaska - they make the map look shit and PR because it has no vote.
-        gdf = gdf[~gdf['NAME'].isin(['Alaska', 'Hawaii', 'Puerto Rico'])]
+    # Drop hawaii and alaska - they make the map look shit and PR because it has no vote.
+    gdf = gdf[~gdf['NAME'].isin(['Alaska', 'Hawaii', 'Puerto Rico'])]
 
-        return gdf
-    except Exception as e:
-        raise RuntimeError(f"Unable to fetch geographic data: {e}") from e
-
+    return gdf
 
 def merge_dataframes(df: pd.DataFrame, gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
