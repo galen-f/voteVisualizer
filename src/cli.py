@@ -19,7 +19,7 @@ def main():
 
     votes = source.fetch(args.congress, args.session, args.roll)
     shapes = load_states() if args.chamber == "senate" else load_districts()
-    merged = join_votes(votes, shapes)
+    merged = join_votes(args.chamber, votes, shapes)
 
     fig = render_map(merged, title=f"{args.chamber.title()} {args.congress}-{args.session}-{args.roll}")
     if not args.no_show:
