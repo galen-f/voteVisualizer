@@ -1,4 +1,4 @@
-from src.house import HouseSource, _congress_to_year, _house_url, _parse_house_members
+from src.house import HouseSource, _congress_to_year, _house_url
 import responses
 import pandas as pd
 import xml.etree.ElementTree as ET

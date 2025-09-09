@@ -28,7 +28,7 @@ def test_join_votes_state_basic():
     # shapes with STUSPS (state postal)
     shapes = gpd.GeoDataFrame(
         {
-            "STUSPS": ["CA", "TX", "NY"],
+            "GEOID": ["CA", "TX", "NY"],
             "geometry": [_toy_poly(0, 0), _toy_poly(2, 0), _toy_poly(4, 0)],
         },
         geometry="geometry",
@@ -38,7 +38,7 @@ def test_join_votes_state_basic():
     # votes keyed by `state`
     votes = pd.DataFrame(
         {
-            "state": ["CA", "TX"],
+            "geoid": ["CA", "TX"],
             "vote": ["Yea", "Nay"],
         }
     )

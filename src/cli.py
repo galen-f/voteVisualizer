@@ -1,7 +1,7 @@
 import argparse
 from .plot import render_map
-from .senate import present_senate_data, SenateSource
-from .house import present_house_data, HouseSource
+from .senate import SenateSource
+from .house import HouseSource
 from .geo.load_geo import load_states, load_districts
 from .geo.join_geo import join_votes
 import matplotlib.pyplot as plt
@@ -12,7 +12,7 @@ def main():
     p.add_argument("--congress", type=int, required=True)
     p.add_argument("--session", type=int, required=True)
     p.add_argument("--roll", type=int, required=True)
-    p.add_argument("--no-show", action="store_true", help="Do not open a window (CI-safe)")
+    # p.add_argument("--no-show", action="store_true", help="Do not open a window (CI-safe)")
     args = p.parse_args()
 
     print(f"Fetching Vote Data for {args.chamber}, {args.session}, {args.roll}...")
@@ -30,8 +30,11 @@ def main():
 
     print("Rendering Visualization...")
     fig = render_map(merged, title=f"{args.chamber.title()} {args.congress}-{args.session}-{args.roll}")
-    if not args.no_show:
-        plt.show()
+    
+    outfile = f"out/vote_{args.chamber}_{args.congress}_{args.session}_{args.roll}.png"
+    plt.savefig(outfile, dpi=200, bbox_inches="tight")
+    print(f"Saved {outfile}")
+    plt.close("all")
 
 if __name__ == "__main__":
     main()
