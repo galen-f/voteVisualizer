@@ -11,7 +11,7 @@ VOTE_PALETTE = {
     "Not Voting": "#7f7f7f",
 }
 
-def render_map(gdf, title="Map", vote_col="vote", outfile=None, show=False):
+def render_map_house(gdf, title="Map", vote_col="vote", outfile=None, show=False):
     # Lazy import to avoid hard dep at import time
     from geopandas import GeoDataFrame
 

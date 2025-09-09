@@ -4,7 +4,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from src.geo.load_geo import load_states, load_districts
-from src.plot import render_map
+from src.maps.plot_house import render_map
 
 def _assert_render_ok(gdf, title):
     fig, ax = render_map(gdf, title=title)

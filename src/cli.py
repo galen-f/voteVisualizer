@@ -1,5 +1,5 @@
 import argparse
-from .plot import render_map
+from .maps.plot_house import render_map_house
 from .senate import SenateSource
 from .house import HouseSource
 from .geo.load_geo import load_states, load_districts
@@ -29,7 +29,7 @@ def main():
     merged = join_votes(args.chamber, votes, shapes)
 
     print("Rendering Visualization...")
-    fig = render_map(merged, title=f"{args.chamber.title()} {args.congress}-{args.session}-{args.roll}")
+    fig = render_map_house(merged, title=f"{args.chamber.title()} {args.congress}-{args.session}-{args.roll}")
     
     outfile = f"out/vote_{args.chamber}_{args.congress}_{args.session}_{args.roll}.png"
     plt.savefig(outfile, dpi=200, bbox_inches="tight")
