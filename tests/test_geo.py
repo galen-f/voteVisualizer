@@ -1,24 +1,23 @@
 from src.geo.load_geo import load_states, load_districts
-from src.geo.join_geo import join_votes
-import pandas as pd
-
-def test_load_states():
-    gdf = load_states()
-    assert not gdf.empty
-    assert 'geometry' in gdf.columns
-
-def test_load_districts():
-    gdf = load_districts()
-    assert not gdf.empty
-    assert 'geometry' in gdf.columns
-
+from src.geo.join_geo import join_votes, join_votes_state, join_votes_district
 import pandas as pd
 import geopandas as gpd
 import pytest
 from shapely.geometry import Polygon
 
-# import the refactored functions
-from src.geo.join_geo import join_votes, join_votes_state, join_votes_district
+
+def test_load_states():
+    gdf = load_states()
+    assert not gdf.empty
+    assert "geometry" in gdf.columns
+
+
+def test_load_districts():
+    gdf = load_districts()
+    assert not gdf.empty
+    assert "geometry" in gdf.columns
+
+
 
 
 def _toy_poly(x0=0, y0=0, w=1, h=1):

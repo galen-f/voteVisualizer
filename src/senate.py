@@ -19,6 +19,7 @@ def _parse_senate_members(root) -> pd.DataFrame:
 
 class SenateSource:
     def fetch(self, congress: int, session: int, roll: int) -> pd.DataFrame:
+        print("Fetching Senate Data...")
         url = _senate_url(congress, session, roll)
         r = requests.get(url, timeout=20)
         r.raise_for_status()
