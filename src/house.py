@@ -12,17 +12,20 @@ STATEFP = {
     "MP":"69","AS":"60"
 }
 
+MEMBER_URL = "https://clerk.house.gov/xml/lists/memberdata.xml"
 
 def _congress_to_year(congress: int) -> int:
     return 1789 + (congress - 1) * 2
 
 def _house_url(year: int, roll: int) -> str:
-# Zero‑pad to three digits; a few historic years may exceed 999, we try both 3 and 4 just in case.
-    session_paths = [f"https://clerk.house.gov/evs/{year}/roll{roll:03d}.xml",
-                     f"https://clerk.house.gov/evs/{year}/roll{roll:04d}.xml"]
-    for path in session_paths:
-        if requests.head(path).status_code == 200:
-            return path
+    # if you already know the exact url, you can skip the HEADs and return it directly
+    for path in (f"https://clerk.house.gov/evs/{year}/roll{roll:03d}.xml",
+                 f"https://clerk.house.gov/evs/{year}/roll{roll:04d}.xml"):
+        try:
+            if requests.head(path, timeout=10).status_code == 200:
+                return path
+        except requests.RequestException:
+            pass
     raise ValueError(f"No valid URL found for {year}-{roll}")
 
 def _parse_house_roll(root) -> pd.DataFrame:
@@ -35,32 +38,31 @@ def _parse_house_roll(root) -> pd.DataFrame:
         state = (leg.get("state") or "").strip()
         vote = (rv.findtext("vote") or "").strip()
         rows.append({"bioguide": bioguide, "state": state, "vote": vote})
-
-        # if state:
-        #     geoid = f"{state}-{dist}".strip("-")  # e.g. CA-12 or CA if at-large
-        #     rows.append({"geoid": geoid, "vote": vote})
     return pd.DataFrame(rows)
 
-def _load_member_map(member_xml_bytes):
-    root = ET.fromstring(member_xml_bytes)
+def _load_member_map_from_web() -> dict:
+    r = requests.get(MEMBER_URL, timeout=20)
+    r.raise_for_status()
+    root = ET.fromstring(r.content)
     mapping = {}
     for m in root.findall(".//member"):
         bid = (m.findtext(".//bioguideID") or "").strip()
         sd = (m.findtext(".//statedistrict") or "").strip()  # e.g., 'NY10', 'UT01', 'AK00'
-        if len(sd) >= 3 and bid:
+        if bid and len(sd) >= 3:
             mapping[bid] = sd
     return mapping
 
-def _build_geoid_df(votes_df, bioguide_to_sd):
+def _build_geoid_df(votes_df: pd.DataFrame, bioguide_to_sd: dict) -> pd.DataFrame:
     out = []
     for _, r in votes_df.iterrows():
         sd = bioguide_to_sd.get(r["bioguide"], "")
+        if not sd:
+            continue
         state_abbr, dist = sd[:2], sd[2:].zfill(2) if sd[2:] else ""
         statefp = STATEFP.get(state_abbr, "")
         if statefp and dist:
             geoid = f"{statefp}{dist}"
             out.append({"geoid": geoid, "vote": r["vote"]})
-        # you can optionally log rows missing mapping
     return pd.DataFrame(out)
 
 class HouseSource:
@@ -69,8 +71,14 @@ class HouseSource:
         url = _house_url(year, roll)
         r = requests.get(url, timeout=20)
         r.raise_for_status()
-        root = ET.fromstring(r.content)
-        return _build_geoid_df(_parse_house_roll(root), _load_member_map(r.content))
+
+        votes_df = _parse_house_roll(ET.fromstring(r.content))
+        member_map = _load_member_map_from_web()  # <-- the real roster, not r.content
+        result = _build_geoid_df(votes_df, member_map)
+
+        # quick sanity logs
+        print(f"votes: {len(votes_df)}  mapped: {len(result)}  unmapped: {len(votes_df)-len(result)}")
+        return result
 
 def present_house_data():
     return HouseSource()
