@@ -14,19 +14,24 @@ STATEFP = {
 
 MEMBER_URL = "https://clerk.house.gov/xml/lists/memberdata.xml"
 
+
 def _congress_to_year(congress: int) -> int:
     return 1789 + (congress - 1) * 2
 
+
 def _house_url(year: int, roll: int) -> str:
     # if you already know the exact url, you can skip the HEADs and return it directly
-    for path in (f"https://clerk.house.gov/evs/{year}/roll{roll:03d}.xml",
-                 f"https://clerk.house.gov/evs/{year}/roll{roll:04d}.xml"):
+    for path in (
+        f"https://clerk.house.gov/evs/{year}/roll{roll:03d}.xml",
+        f"https://clerk.house.gov/evs/{year}/roll{roll:04d}.xml",
+    ):
         try:
             if requests.head(path, timeout=10).status_code == 200:
                 return path
         except requests.RequestException:
             pass
     raise ValueError(f"No valid URL found for {year}-{roll}")
+
 
 def _parse_house_roll(root) -> pd.DataFrame:
     rows = []
@@ -40,6 +45,7 @@ def _parse_house_roll(root) -> pd.DataFrame:
         rows.append({"bioguide": bioguide, "state": state, "vote": vote})
     return pd.DataFrame(rows)
 
+
 def _load_member_map_from_web() -> dict:
     r = requests.get(MEMBER_URL, timeout=20)
     r.raise_for_status()
@@ -47,10 +53,13 @@ def _load_member_map_from_web() -> dict:
     mapping = {}
     for m in root.findall(".//member"):
         bid = (m.findtext(".//bioguideID") or "").strip()
-        sd = (m.findtext(".//statedistrict") or "").strip()  # e.g., 'NY10', 'UT01', 'AK00'
+        sd = (
+            m.findtext(".//statedistrict") or ""
+        ).strip()  # e.g., 'NY10', 'UT01', 'AK00'
         if bid and len(sd) >= 3:
             mapping[bid] = sd
     return mapping
+
 
 def _build_geoid_df(votes_df: pd.DataFrame, bioguide_to_sd: dict) -> pd.DataFrame:
     out = []
@@ -65,6 +74,7 @@ def _build_geoid_df(votes_df: pd.DataFrame, bioguide_to_sd: dict) -> pd.DataFram
             out.append({"geoid": geoid, "vote": r["vote"]})
     return pd.DataFrame(out)
 
+
 class HouseSource:
     def fetch(self, congress: int, roll: int) -> pd.DataFrame:
         year = _congress_to_year(congress)
@@ -77,8 +87,11 @@ class HouseSource:
         result = _build_geoid_df(votes_df, member_map)
 
         # quick sanity logs
-        print(f"votes: {len(votes_df)}  mapped: {len(result)}  unmapped: {len(votes_df)-len(result)}")
+        print(
+            f"votes: {len(votes_df)}  mapped: {len(result)}  unmapped: {len(votes_df) - len(result)}"
+        )
         return result
+
 
 def present_house_data():
     return HouseSource()

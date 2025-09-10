@@ -1,22 +1,18 @@
 import os
 from dotenv import load_dotenv
-import requests
-import xml.etree.ElementTree as ET
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import pandas as pd
 import geopandas as gpd
-from collections import defaultdict
 
 load_dotenv()
 state_map = os.getenv("STATE_MAP_FILE_PATH")  # Path to the shapefile of
-district_map = os.getenv("DISTRICT_MAP_FILE_PATH")  # Path to the shapefile of US congressional districts
+district_map = os.getenv(
+    "DISTRICT_MAP_FILE_PATH"
+)  # Path to the shapefile of US congressional districts
 
 
 def load_states():
     """
     Fetch the geographic data for US states from a shapefile.
-    
+
     Returns
     -------
     gpd.GeoDataFrame
@@ -28,9 +24,10 @@ def load_states():
     # print(gdf)
 
     # Drop hawaii and alaska - they make the map look shit and PR because it has no vote.
-    gdf = gdf[~gdf['NAME'].isin(['Alaska', 'Hawaii', 'Puerto Rico'])]
+    gdf = gdf[~gdf["NAME"].isin(["Alaska", "Hawaii", "Puerto Rico"])]
 
     return gdf
+
 
 def load_districts():
     """
@@ -43,6 +40,6 @@ def load_districts():
     gdf = gpd.read_file(district_map)
 
     # Drop non-contiguous areas if present (e.g. PR, AK, HI, GU, VI, etc)
-    gdf = gdf[~gdf['STATEFP'].isin(['02', '15', '60', '66', '69', '72', '78'])]
+    gdf = gdf[~gdf["STATEFP"].isin(["02", "15", "60", "66", "69", "72", "78"])]
 
     return gdf

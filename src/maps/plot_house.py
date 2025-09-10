@@ -1,4 +1,5 @@
 import matplotlib
+
 matplotlib.use("Agg")  # headless
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -10,6 +11,7 @@ VOTE_PALETTE = {
     "Present": "#ff7f0e",
     "Not Voting": "#7f7f7f",
 }
+
 
 def render_map_house(gdf, title="Map", vote_col="vote", outfile=None, show=False):
     # Lazy import to avoid hard dep at import time
@@ -31,8 +33,11 @@ def render_map_house(gdf, title="Map", vote_col="vote", outfile=None, show=False
     ax.set_axis_off()
 
     # Legend for categorical votes
-    present_values = [v for v in ["Aye", "No", "Present", "Not Voting"]
-                      if v in set(gdf[vote_col].dropna().unique())]
+    present_values = [
+        v
+        for v in ["Aye", "No", "Present", "Not Voting"]
+        if v in set(gdf[vote_col].dropna().unique())
+    ]
     handles = [mpatches.Patch(color=VOTE_PALETTE[v], label=v) for v in present_values]
     if handles:
         ax.legend(handles=handles, title="Vote", loc="lower left", frameon=True)
