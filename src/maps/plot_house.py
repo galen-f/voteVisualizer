@@ -25,7 +25,7 @@ def render_map_house(gdf, title="Map", vote_col="vote", outfile=None, show=False
         raise ValueError(f"GeoDataFrame must contain '{vote_col}' for coloring")
 
     # Map votes -> colors. Unknowns to light gray.
-    colors = gdf[vote_col].map(VOTE_PALETTE).fillna("#cccccc")
+    colors = gdf[vote_col].map(VOTE_PALETTE).fillna("#7f7f7f")
 
     fig, ax = plt.subplots(figsize=(10, 6))
     gdf.plot(ax=ax, color=colors, edgecolor="black", linewidth=0.2)
