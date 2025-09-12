@@ -34,7 +34,7 @@ VOTE_PALETTE = {
 # row 0 is top. (row, col) positions form a contiguous USA-ish block plus AK, HI.
 TILE_POS = {
     # Far outliers
-    "AK": (0, 0), "HI": (5, 0),
+    "AK": (1, 0), "HI": (6, 0),
     # West to east main body
     "WA": (2, 1), "ID": (2, 2), "MT": (2, 3), "ND": (2, 4), "MN": (2, 5), "WI": (1, 6), "MI": (2, 7),
     "OR": (3, 1), "NV": (3, 2), "WY": (3, 3), "SD": (3, 4), "IA": (3, 5), "IL": (2, 6), "IN": (3, 6), "OH": (3, 7), "PA": (3, 8),

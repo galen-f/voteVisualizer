@@ -24,7 +24,7 @@ def load_states():
     # print(gdf)
 
     # Drop hawaii and alaska - they make the map look shit and PR because it has no vote.
-    gdf = gdf[~gdf["NAME"].isin(["Alaska", "Hawaii", "Puerto Rico"])]
+    gdf = gdf[~gdf["NAME"].isin(["District of Columbia", "Puerto Rico"])]
 
     return gdf
 
