@@ -13,6 +13,7 @@ def main():
     p.add_argument("--congress", type=int, required=True)
     p.add_argument("--session", type=int, required=True)
     p.add_argument("--roll", type=int, required=True)
+    p.add_argument("--background", choices=["white", "transparent"], default="white", help="Background color")
     args = p.parse_args()
 
     print(f"Fetching Vote Data for {args.chamber}, {args.session}, {args.roll}...")
@@ -30,10 +31,10 @@ def main():
 
     if args.chamber == "senate":
         print("Rendering Visualization...")
-        fig = render_map_senate(merged, title=f"{args.chamber.title()} {args.congress}-{args.session}-{args.roll}")
+        fig = render_map_senate(merged, title=f"{args.chamber.title()} {args.congress}-{args.session}-{args.roll}", background=args.background)
     else:
         print("Rendering Visualization...")
-        fig = render_map_house(merged, title=f"{args.chamber.title()} {args.congress}-{args.session}-{args.roll}")
+        fig = render_map_house(merged, title=f"{args.chamber.title()} {args.congress}-{args.session}-{args.roll}", background=args.background)
 
     outfile = f"out/vote_{args.chamber}_{args.congress}_{args.session}_{args.roll}.png"
     plt.savefig(outfile, dpi=200, bbox_inches="tight")

@@ -13,7 +13,7 @@ VOTE_PALETTE = {
 }
 
 
-def render_map_house(gdf, title="Map", vote_col="vote", outfile=None, show=False):
+def render_map_house(gdf, background, title="Map", vote_col="vote", outfile=None, show=False):
     # Lazy import to avoid hard dep at import time
     from geopandas import GeoDataFrame
 
@@ -29,7 +29,7 @@ def render_map_house(gdf, title="Map", vote_col="vote", outfile=None, show=False
 
     fig, ax = plt.subplots(figsize=(10, 6))
     gdf.plot(ax=ax, color=colors, edgecolor="black", linewidth=0.2)
-    ax.set_title(title)
+    
     ax.set_axis_off()
 
     # Legend for categorical votes
@@ -39,9 +39,13 @@ def render_map_house(gdf, title="Map", vote_col="vote", outfile=None, show=False
         if v in set(gdf[vote_col].dropna().unique())
     ]
     handles = [mpatches.Patch(color=VOTE_PALETTE[v], label=v) for v in present_values]
-    if handles:
+    if handles and background == "white":
         ax.legend(handles=handles, title="Vote", loc="lower left", frameon=True)
-
+        ax.set_title(title)
+    if background == "transparent":
+        fig.patch.set_alpha(0.0)
+        ax.patch.set_alpha(0.0)
+        
     fig.tight_layout()
 
     if outfile:
