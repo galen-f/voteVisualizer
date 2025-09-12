@@ -77,6 +77,7 @@ def _tile_bbox(tile_size=1.0, gap=0.08):
 
 def render_map_senate(
     gdf: gpd.GeoDataFrame,
+    background: str,
     title: str = "Senate",
     vote_col: str = "vote",
     outfile: str | None = None,
@@ -148,15 +149,21 @@ def render_map_senate(
     ax.set_aspect("equal", adjustable="box")
 
     # Legend (only include categories used)
-    used_cats = pd.unique([_normalize_vote(v) for vs in state_votes.values() for v in vs])
-    handles = []
-    for cat in ["Yea", "Nay", "Present", "Not Voting"]:
-        if cat in used_cats:
-            handles.append(mpatches.Patch(color=VOTE_PALETTE[cat], label=cat))
-    if handles:
-        ax.legend(handles=handles, title="Vote", loc="lower left", frameon=True)
+    if background == "white":
+        used_cats = pd.unique([_normalize_vote(v) for vs in state_votes.values() for v in vs])
+        handles = []
+        for cat in ["Yea", "Nay", "Present", "Not Voting"]:
+            if cat in used_cats:
+                handles.append(mpatches.Patch(color=VOTE_PALETTE[cat], label=cat))
+        if handles:
+            ax.legend(handles=handles, title="Vote", loc="lower left", frameon=True)
 
-    ax.set_title(title)
+        ax.set_title(title)
+
+    if background == "transparent":
+        fig.patch.set_alpha(0.0)
+        ax.patch.set_alpha(0.0)
+        
     fig.tight_layout()
 
     if outfile:
