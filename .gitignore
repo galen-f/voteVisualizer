@@ -1,5 +1,5 @@
 /.env
-/maps
+/maps/**
 data/**
 *.png
 
