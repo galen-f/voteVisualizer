@@ -3,13 +3,14 @@ import matplotlib
 matplotlib.use("Agg")  # headless
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from ..config import color_for, style_for
 
 # Consistent colors for categories
 VOTE_PALETTE = {
-    "Aye": "#2ca02c",
-    "No": "#d62728",
-    "Present": "#ff7f0e",
-    "Not Voting": "#7f7f7f",
+    "Aye": color_for("yes"),
+    "No": color_for("no"),
+    "Present": color_for("present"),
+    "Not Voting": color_for("not_voting"),
 }
 
 
@@ -25,10 +26,10 @@ def render_map_house(gdf, background, title="Map", vote_col="vote", outfile=None
         raise ValueError(f"GeoDataFrame must contain '{vote_col}' for coloring")
 
     # Map votes -> colors. Unknowns to light gray.
-    colors = gdf[vote_col].map(VOTE_PALETTE).fillna("#7f7f7f")
+    colors = gdf[vote_col].map(VOTE_PALETTE).fillna(color_for("not_voting"))
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    gdf.plot(ax=ax, color=colors, edgecolor="black", linewidth=0.2)
+    gdf.plot(ax=ax, color=colors, edgecolor=color_for("lines"), linewidth=style_for("default"))
     
     ax.set_axis_off()
 
@@ -45,7 +46,6 @@ def render_map_house(gdf, background, title="Map", vote_col="vote", outfile=None
     if background == "transparent":
         fig.patch.set_alpha(0.0)
         ax.patch.set_alpha(0.0)
-        
     fig.tight_layout()
 
     if outfile:

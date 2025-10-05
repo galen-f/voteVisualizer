@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import pandas as pd
 import geopandas as gpd
+from ..config import color_for
 
 # Normalize vote labels coming from the Senate XML
 VOTE_NORMALIZE = {
@@ -24,10 +25,10 @@ def _normalize_vote(v):
 # Keep colors consistent with the project palette (same as House)
 # Green, Red, Orange, Gray
 VOTE_PALETTE = {
-    "Yea": "#2ca02c",
-    "Nay": "#d62728",
-    "Present": "#ff7f0e",
-    "Not Voting": "#7f7f7f",
+    "Yea": color_for("yes"),
+    "Nay": color_for("no"),
+    "Present": color_for("present"),
+    "Not Voting": color_for("not_voting"),
 }
 
 # A standard 50–state tile layout (similar to FiveThirtyEight/R-tilemap style).
@@ -93,12 +94,11 @@ def render_map_senate(
     # Build state -> [vote1, vote2] map
     state_votes = _votes_by_state(gdf, vote_col)
 
-    # Figure & axes (use default matplotlib size unless caller sets rcparams)
-    fig, ax = plt.subplots(figsize=(12, 8))  # "default" feel; close to your current output
+    fig, ax = plt.subplots(figsize=(12, 8))
     ax.set_axis_off()
 
     # geometry not used for placement; we draw a grid
-    tile_w, tile_h, inner_gap = _tile_bbox(tile_size=1.0, gap=0.08)
+    tile_w, tile_h, inner_gap = _tile_bbox()
 
     # Track encountered states to drop exact duplicates
     plotted = set()
@@ -118,8 +118,8 @@ def render_map_senate(
             spill_col += 1  # move along the spill row
 
         # Outer tile (background)
-        x0 = c * (tile_w + 0.15)
-        y0 = -r * (tile_h + 0.15)
+        x0 = c * (tile_w + 0.1)
+        y0 = -r * (tile_h + 0.1)
 
         # Two inner rectangles: left & right
         votes = state_votes.get(st, ["Not Voting", "Not Voting"])
@@ -127,7 +127,7 @@ def render_map_senate(
         right_col = VOTE_PALETTE.get(_normalize_vote(votes[1]), VOTE_PALETTE["Not Voting"])
 
         # Outer border tile
-        outer = plt.Rectangle((x0, y0), tile_w, tile_h, linewidth=0.6, edgecolor="white", facecolor="#4e7890")
+        outer = plt.Rectangle((x0, y0), tile_w, tile_h, linewidth=0.8, edgecolor=color_for("lines"), facecolor=color_for("lines"))
         ax.add_patch(outer)
 
         # Inner two blocks
@@ -163,7 +163,7 @@ def render_map_senate(
     if background == "transparent":
         fig.patch.set_alpha(0.0)
         ax.patch.set_alpha(0.0)
-        
+
     fig.tight_layout()
 
     if outfile:
