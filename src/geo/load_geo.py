@@ -1,12 +1,11 @@
 import os
-from dotenv import load_dotenv
 import geopandas as gpd
 
-load_dotenv()
-state_map = os.getenv("STATE_MAP_FILE_PATH")  # Path to the shapefile of
-district_map = os.getenv(
-    "DISTRICT_MAP_FILE_PATH"
-)  # Path to the shapefile of US congressional districts
+STATE_MAP_FILE_PATH = "data/states/cb_2018_us_state_20m.shp"
+DISTRICT_MAP_FILE_PATH = "data/districts/cb_2018_us_cd116_20m.shp"
+
+state_map = STATE_MAP_FILE_PATH  # Path to the shapefile of
+district_map = DISTRICT_MAP_FILE_PATH# Path to the shapefile of US congressional districts
 
 
 def load_states():
