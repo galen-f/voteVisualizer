@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import pandas as pd
 import geopandas as gpd
-from ..config import color_for
+from ..config import color_for, style_for
 
 # Normalize vote labels coming from the Senate XML
 VOTE_NORMALIZE = {
@@ -127,22 +127,46 @@ def render_map_senate(
         right_col = VOTE_PALETTE.get(_normalize_vote(votes[1]), VOTE_PALETTE["Not Voting"])
 
         # Outer border tile
-        outer = plt.Rectangle((x0, y0), tile_w, tile_h, linewidth=0.8, edgecolor=color_for("lines"), facecolor=color_for("lines"))
-        ax.add_patch(outer)
+        outer = plt.Rectangle((x0, y0), tile_w, tile_h, facecolor=color_for("lines"))
+        #ax.add_patch(outer)
 
         # Inner two blocks
         inner_w = (tile_w - inner_gap) / 2.0
         inner_h = tile_h - inner_gap
-        inner_y = y0 + inner_gap / 2.0
-        left_x  = x0 + inner_gap / 2.0
+        inner_y = y0 - inner_gap
+        left_x  = x0 + inner_gap +0.01
         right_x = x0 + inner_gap / 2.0 + inner_w + inner_gap / 2.0
 
-        ax.add_patch(plt.Rectangle((left_x,  inner_y), inner_w, inner_h, facecolor=left_col,  edgecolor="none"))
-        ax.add_patch(plt.Rectangle((right_x, inner_y), inner_w, inner_h, facecolor=right_col, edgecolor="none"))
+        # Inner tiles as side-by-side semicircles
+        center_y = inner_y + inner_h
+        left_center_x = left_x + inner_w
+        right_center_x = right_x
+        radius = min(inner_w, inner_h)
+
+        # Left semicircle (left half)
+        left_semi = mpatches.Wedge(
+            center=(left_center_x, center_y),
+            r=radius,
+            theta1=90,
+            theta2=270,
+            facecolor=left_col,
+            edgecolor="none"
+        )
+        ax.add_patch(left_semi)
+
+        # Right semicircle (right half)
+        right_semi = mpatches.Wedge(
+            center=(right_center_x, center_y),
+            r=radius,
+            theta1=270,
+            theta2=90,
+            facecolor=right_col,
+            edgecolor="none"
+        )
+        ax.add_patch(right_semi)
 
         # State label
-        ax.text(x0 + tile_w / 2.0, y0 + tile_h / 2.0, st,
-                ha="center", va="center", fontsize=9, color="white", weight="bold")
+        ax.text(x0 + tile_w / 1.85, y0 + tile_h /1.2, st, ha="center", va="center", fontsize=12, color=color_for("text"), weight=style_for("default"))
     
     ax.set_xlim(-0.5, 14.5)
     ax.set_ylim(-9.5, 1.5)

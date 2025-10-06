@@ -7,7 +7,8 @@ COLORS = {
     "present": "#ff7f0e",
     "not_voting": "#7f7f7f",
 
-    "lines": "#0D0D0D"
+    "lines": "#0D0D0D",
+    "text": "#F7F7F7"
 }
 
 STYLES = {
