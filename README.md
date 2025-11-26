@@ -5,9 +5,9 @@ This is a simple Python CLI tool that colors a map of the US based on how each s
 You need a congress number (119th Congress at time of writing), a session number (1st or 2nd year of that congress), and a roll-call (a three digit "vote number")
 <ul>
 <li> Retrieves the vote specified from the Senate's public XML feed.
-<li> Classifies every state into one of six orientations (both Yea, Both Nay, split, etc.)
-<li> Joins the data in the 50-state shape file and the vote data.
-<li> Opens a Matplotlib window showing the coloured map.
+<li> Classifies each Senate seat into Yea, Nay, Present, or Not Voting.
+<li> Visualizes the data in a grid.
+<li> Downloads a .png file of the visualization in out/..
 
 ## Quick Start
 Clone the repo
@@ -15,7 +15,10 @@ Clone the repo
 cd vote‑map‑visualizer`
 
 Install Dependencies
-`pip install -r requirements.txt`
+`WIP`
+
+## Notes
+Works on 101st congress - 119th and (hopefully) future
 
 ## Demo
 <img width="1440" height="792" alt="seateVoteMap" src="https://github.com/user-attachments/assets/4b62107b-e00a-4b1a-aa2b-e9056ffa56c4" />
