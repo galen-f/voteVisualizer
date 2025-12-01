@@ -1,12 +1,12 @@
 # 🔴 🔵 Vote Map Visualizer 🔴 🔵
-👋 Hey! This is the vote visualizer. An easy to use python tool meant to help create graphics of votes in the US Senate and House of Represenatives (WIP).
+👋 Hey! This is the vote visualizer. An easy to use python tool meant to help create graphics of votes in the US Senate and House of Representatives (WIP).
 
 ## Features
 The tool is CLI based. It captures vote information from clerk.house.gov (for the House) and senate.gov (for the Senate). It then displays these in a visually appealing graphic.
 
 In the most recent stable build you can reliably display any Senate vote from the 101st congress to the current 119th. All you need is the roll call number (go to CLI usage to learn more).
 
-The vizualization has serveral configuration settings which you can edit in the src/config file like the colors used, and font weights. Additionally, you can set the background to be transparent through a CLI tag (discussed later).
+The visualization has several configuration settings which you can edit in the src/config file like the colors used, and font weights. Additionally, you can set the background to be transparent through a CLI tag (discussed later).
 
 Roll call vote tallies are generally posted within an hour of a vote.
 
@@ -16,7 +16,7 @@ As an example, lets take the August 7, 2022 vote on the Inflation Reduction Act.
 
 ```python -m src.cli --chamber senate --congress 117 --session 2 --roll 325 --background transparent```
 
-from the root directory. In this case, we use the --background tag, which is optional, to specify we want it to be transparent. This can make it easier to add the vizualization to your own graphics. The following .png file is then placed in the /out directory.
+from the root directory. In this case, we use the --background tag, which is optional, to specify we want it to be transparent. This can make it easier to add the visualization to your own graphics. The following .png file is then placed in the /out directory.
 
 <img width="2140" height="1580" alt="Inflation reduction Act - Senate 117 - 2 - 325"  src="https://github.com/user-attachments/assets/9a231339-35fb-4634-bbf8-a327a69aefed" />
 
@@ -73,7 +73,7 @@ The testing suite is built with pytest. To run the test use `python -m pytest`.
 
 
 ## Future Work
-The House of Represenatives presents two challenges. One is in redistricting, which causes the maps to change at irregular intervals and makes it incredibly difficult to align votes with the actual districts which they represent. Additionally, with over 400 unique districts, vizualization becomes difficult. 
+The House of Representatives presents two challenges. One is in redistricting, which causes the maps to change at irregular intervals and makes it incredibly difficult to align votes with the actual districts which they represent. Additionally, with over 400 unique districts, visualization becomes difficult. 
 
 Currently, the Senate data only goes back to the 101st congress (1989). In the long term I would be interested in expanding this to historical data, however finding and storing this data is a massive task.
 
@@ -87,4 +87,4 @@ MIT open source
 
 **U.S. House Clerk Vote Data** — Public vote data API from clerk.house.gov.
 
-**US Census Data** — Publicly availible shape files for districts and states.
+**US Census Data** — Publicly available shape files for districts and states.
