@@ -1,33 +1,90 @@
-# Vote Map Visualizer
+# 🔴 🔵 Vote Map Visualizer 🔴 🔵
+👋 Hey! This is the vote visualizer. An easy to use python tool meant to help create graphics of votes in the US Senate and House of Represenatives (WIP).
 
-This is a simple Python CLI tool that colors a map of the US based on how each state's two senators voted on a specific roll-call.
-<br>
-You need a congress number (119th Congress at time of writing), a session number (1st or 2nd year of that congress), and a roll-call (a three digit "vote number")
-<ul>
-<li> Retrieves the vote specified from the Senate's public XML feed.
-<li> Classifies each Senate seat into Yea, Nay, Present, or Not Voting.
-<li> Visualizes the data in a grid.
-<li> Downloads a .png file of the visualization in out/..
+## Features
+The tool is CLI based. It captures vote information from clerk.house.gov (for the House) and senate.gov (for the Senate). It then displays these in a visually appealing graphic.
 
-## Quick Start
-Clone the repo
-`git clone {url}
-cd vote‑map‑visualizer`
+In the most recent stable build you can reliably display any Senate vote from the 101st congress to the current 119th. All you need is the roll call number (go to CLI usage to learn more).
 
-Install Dependencies
-`WIP`
+The vizualization has serveral configuration settings which you can edit in the src/config file like the colors used, and font weights. Additionally, you can set the background to be transparent through a CLI tag (discussed later).
 
-To generate a map, from the root use a command such as: ```python -m src.cli --chamber senate --congress 117 --session 2 --roll 325``` for vote 117-2-325 (the inflation reduction act).
+Roll call vote tallies are generally posted within an hour of a vote.
 
-## Notes
-Works on 101st congress - 119th (current) and (hopefully) future congresses
 
 ## Demo
-<img width="1440" height="792" alt="seateVoteMap" src="https://github.com/user-attachments/assets/4b62107b-e00a-4b1a-aa2b-e9056ffa56c4" />
-Vote map of the vote 119-1-416 of the US Senate.
+As an example, lets take the August 7, 2022 vote on the Inflation Reduction Act. This was the 117th congress, 2nd session, and 325th roll call. We can call the command:
 
-## Contributing
-Always feel free to pull, if you spot a bug or have an idea, open an issue or reach out to me on my socials.
+```python -m src.cli --chamber senate --congress 117 --session 2 --roll 325 --background transparent```
+
+from the root directory. In this case, we use the --background tag, which is optional, to specify we want it to be transparent. This can make it easier to add the vizualization to your own graphics. The following .png file is then placed in the /out directory.
+
+<img width="2140" height="1580" alt="Inflation reduction Act - Senate 117 - 2 - 325"  src="https://github.com/user-attachments/assets/9a231339-35fb-4634-bbf8-a327a69aefed" />
+
+
+## Installation
+To install the tool locally
+
+1. Clone the repository
+   `git clone https://github.com/yourusername/VoteMapMaker.git
+    cd VoteMapMaker`
+2. Create a virtual environment
+   `.venv\Scripts\activate`
+3. Install Dependencies
+   `pip install -r requirements.txt`
+
+
+## CLI Usage
+The CLI tool has several flags:
+- `--chamber`
+    - This is set to either `senate` or `house`
+- `--congress`
+    - Set to a congress number, `101` - `119`+
+- `--session`
+    - Session number, either `1` or `2`
+- `--roll`
+    - Vote Number
+- `--background`
+    Optional, either `white` or `transparent`
+
+Roll call numbers are made up of three different numbers, the congress, the session, and the roll call. For instance, the current congress is the 119th, so we start with 119. A congress is 2 years long, the session is that year, 1 or 2. The roll call is the vote number, so for the first vote of a session, it is 1.
+
+An example usage would be 
+
+```python -m src.cli --chamber senate --congress 119 --session 1 --roll 35 --background transparent``` 
+
+which is the vote 119-1-35 found [here](https://www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00035.htm). It was a relatively boring confirmation of Eric Turner to the Secretary of Housing and Human Development.
+
+
+## Senate Data Pipeline
+1. Senate.py parses the CLI command to a Senate roll call XML URL
+2. Takes the free to use XML off senate.gov
+3. XML is parsed into a structures dataframe with state codes and vote values
+4. Renders a semi-circle shape for each vote (two per state)
+
+
+## House Data Pipeline
+House data is a work in progress and does not currently work. It is partially implemented but has serious known issues with district matching, missing data, and geometry alignment. Expect changes as development continues.
+
+
+## Testing
+The testing suite is built with pytest. To run the test use `python -m pytest`.
+
+*note* Tests cover the house section too, but many of these tests are stubs, incorrect, or do not work.
+
+
+## Future Work
+The House of Represenatives presents two challenges. One is in redistricting, which causes the maps to change at irregular intervals and makes it incredibly difficult to align votes with the actual districts which they represent. Additionally, with over 400 unique districts, vizualization becomes difficult. 
+
+Currently, the Senate data only goes back to the 101st congress (1989). In the long term I would be interested in expanding this to historical data, however finding and storing this data is a massive task.
+
 
 ## License
-I don't care, just credit me please.
+MIT open source
+
+
+## Acknowledgments / Resources
+**U.S. Senate Roll Call Vote XML Feeds** — Publicly available vote data provided by senate.gov.
+
+**U.S. House Clerk Vote Data** — Public vote data API from clerk.house.gov.
+
+**US Census Data** — Publicly availible shape files for districts and states.
