@@ -1,28 +1,67 @@
-from src.senate import SenateSource, _senate_url
-import responses
-import pandas as pd
+from src.senate import _parse_senate_members, SenateSource
 
-def test_senate_url():
-    assert _senate_url(117, 1, 45) == (
-        "https://www.senate.gov/legislative/LIS/roll_call_votes/"
-        "vote1171/vote_117_1_00045.xml"
-    )
-    assert _senate_url(116, 2, 123) == (
-        "https://www.senate.gov/legislative/LIS/roll_call_votes/"
-        "vote1162/vote_116_2_00123.xml"
-    )
+def test_parse_senate_members():
+    xml_content = """
+    <root>
+        <members>
+            <member>
+                <state>CA</state>
+                <vote_cast>Yea</vote_cast>
+            </member>
+            <member>
+                <state>TX</state>
+                <vote_cast>Nay</vote_cast>
+            </member>
+            <member>
+                <state>FL</state>
+                <vote_cast></vote_cast>
+            </member>
+        </members>
+    </root>
+    """
+    import xml.etree.ElementTree as ET
+    root = ET.fromstring(xml_content)
+    df = _parse_senate_members(root)
+    
+    assert len(df) == 3
+    assert df.iloc[0]['geoid'] == 'CA'
+    assert df.iloc[0]['vote'] == 'Yea'
+    assert df.iloc[1]['geoid'] == 'TX'
+    assert df.iloc[1]['vote'] == 'Nay'
+    assert df.iloc[2]['geoid'] == 'FL'
+    assert df.iloc[2]['vote'] == 'Not Voting'
 
-@responses.activate
-def test_fetch_parses_members():
-    url = _senate_url(117,1,45)
-    xml = b"""
-    <roll_call_vote>
-      <members>
-        <member><state>CA</state><vote_cast>Yea</vote_cast></member>
-        <member><state>CA</state><vote_cast>Nay</vote_cast></member>
-      </members>
-    </roll_call_vote>"""
-    responses.add(responses.GET, url, body=xml, status=200)
-    df = SenateSource().fetch(117,1,45)
-    assert set(df.columns) == {"geoid","vote"}
+def test_senate_source_fetch(monkeypatch):
+    class MockResponse:
+        def __init__(self, content):
+            self.content = content
+        def raise_for_status(self):
+            pass
+
+    def mock_get(url, timeout):
+        xml_content = """
+        <root>
+            <members>
+                <member>
+                    <state>NY</state>
+                    <vote_cast>Yea</vote_cast>
+                </member>
+                <member>
+                    <state>NJ</state>
+                    <vote_cast>Nay</vote_cast>
+                </member>
+            </members>
+        </root>
+        """
+        return MockResponse(xml_content.encode('utf-8'))
+
+    monkeypatch.setattr("requests.get", mock_get)
+
+    source = SenateSource()
+    df = source.fetch(congress=117, session=2, roll=45)
+
     assert len(df) == 2
+    assert df.iloc[0]['geoid'] == 'NY'
+    assert df.iloc[0]['vote'] == 'Yea'
+    assert df.iloc[1]['geoid'] == 'NJ'
+    assert df.iloc[1]['vote'] == 'Nay'
