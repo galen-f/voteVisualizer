@@ -17,7 +17,7 @@ cd vote‑map‑visualizer`
 Install Dependencies
 `WIP`
 
-Run a sample map such as ```python -m src.cli --chamber senate --congress 117 --session 2 --roll 325``` for vote 117-2-325 (the inflation reduction act).
+To generate a map, from the root use a command such as: ```python -m src.cli --chamber senate --congress 117 --session 2 --roll 325``` for vote 117-2-325 (the inflation reduction act).
 
 ## Notes
 Works on 101st congress - 119th (current) and (hopefully) future congresses
