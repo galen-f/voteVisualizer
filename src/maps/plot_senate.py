@@ -4,7 +4,6 @@ matplotlib.use("Agg")  # headless
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import pandas as pd
-import geopandas as gpd
 from ..config import color_for, style_for
 
 # Normalize vote labels coming from the Senate XML
@@ -47,9 +46,9 @@ TILE_POS = {
 
 # If a state isn’t in TILE_POS, we’ll place it in a simple spillover row to avoid crashes.
 
-def _votes_by_state(joined: gpd.GeoDataFrame, vote_col: str) -> dict:
+def _votes_by_state(joined: pd.DataFrame, vote_col: str) -> dict:
     """
-    Input: GeoDataFrame after join (two rows per state for Senate).
+    Input: DataFrame after join (two rows per state for Senate).
     Output: { 'STUSPS' -> [vote_for_sen1, vote_for_sen2] }
     Ordering is deterministic but not seniority: preserve XML order as merged.
     If fewer than two rows are present, pad with 'Not Voting'.
@@ -77,7 +76,7 @@ def _tile_bbox(tile_size=1.0, gap=0.08):
     return w, h, inner_gap
 
 def render_map_senate(
-    gdf: gpd.GeoDataFrame,
+    df: pd.DataFrame,
     background: str,
     title: str = "Senate",
     vote_col: str = "vote",
@@ -88,12 +87,11 @@ def render_map_senate(
     Render a 50-state tile grid for Senate votes (two votes per state).
     House plotting is defined elsewhere and is not modified here.
     """
-    if not isinstance(gdf, gpd.GeoDataFrame):
-        raise TypeError("render_map_senate expects a GeoDataFrame after join_votes(...).")
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("render_map_senate expects a DataFrame after join_votes(...).")
 
     # Build state -> [vote1, vote2] map
-    state_votes = _votes_by_state(gdf, vote_col)
-
+    state_votes = _votes_by_state(df, vote_col)
     fig, ax = plt.subplots(figsize=(12, 8))
     ax.set_axis_off()
 
@@ -117,7 +115,6 @@ def render_map_senate(
         if st not in TILE_POS:
             spill_col += 1  # move along the spill row
 
-        # Outer tile (background)
         x0 = c * (tile_w + 0.1)
         y0 = -r * (tile_h + 0.1)
 
@@ -125,10 +122,6 @@ def render_map_senate(
         votes = state_votes.get(st, ["Not Voting", "Not Voting"])
         left_col  = VOTE_PALETTE.get(_normalize_vote(votes[0]), VOTE_PALETTE["Not Voting"])
         right_col = VOTE_PALETTE.get(_normalize_vote(votes[1]), VOTE_PALETTE["Not Voting"])
-
-        # Outer border tile
-        outer = plt.Rectangle((x0, y0), tile_w, tile_h, facecolor=color_for("lines"))
-        #ax.add_patch(outer)
 
         # Inner two blocks
         inner_w = (tile_w - inner_gap) / 2.0
