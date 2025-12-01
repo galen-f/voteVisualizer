@@ -17,8 +17,10 @@ cd vote‑map‑visualizer`
 Install Dependencies
 `WIP`
 
+Run a sample map such as ```python -m src.cli --chamber senate --congress 117 --session 2 --roll 325``` for vote 117-2-325 (the inflation reduction act).
+
 ## Notes
-Works on 101st congress - 119th and (hopefully) future
+Works on 101st congress - 119th (current) and (hopefully) future congresses
 
 ## Demo
 <img width="1440" height="792" alt="seateVoteMap" src="https://github.com/user-attachments/assets/4b62107b-e00a-4b1a-aa2b-e9056ffa56c4" />
